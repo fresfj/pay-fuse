@@ -76,15 +76,9 @@ function Layout1(props: Layout1Props) {
 						</Suspense>
 						{children}
 					</div>
-
-					{config.footer.display && (
-						<FooterLayout1 className={config.footer.style === 'fixed' ? 'sticky bottom-0' : ''} />
-					)}
 				</main>
-
 				{config.navbar.display && config.navbar.position === 'right' && <NavbarWrapperLayout1 />}
 			</div>
-
 			{config.rightSidePanel.display && <RightSideLayout1 />}
 			<FuseMessage />
 		</Root>
