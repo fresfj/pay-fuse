@@ -50,8 +50,8 @@ function FirebaseSignInTab() {
 	const { isValid, dirtyFields, errors } = formState;
 
 	useEffect(() => {
-		setValue('email', 'hi@withinpixels.com', { shouldDirty: true, shouldValidate: true });
-		setValue('password', 'dummyPassword', { shouldDirty: true, shouldValidate: true });
+		setValue('email', '', { shouldDirty: true, shouldValidate: true });
+		setValue('password', '', { shouldDirty: true, shouldValidate: true });
 	}, [setValue]);
 
 	function onSubmit(formData: FormType) {

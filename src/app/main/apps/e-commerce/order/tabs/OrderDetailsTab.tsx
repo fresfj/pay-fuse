@@ -16,6 +16,7 @@ import Table from '@mui/material/Table';
 import TableHead from '@mui/material/TableHead';
 import { useGetECommerceOrderQuery } from '../../ECommerceApi';
 import OrdersStatus from '../OrdersStatus';
+import FuseUtils from '@fuse/utils';
 
 const mapKey = import.meta.env.VITE_MAP_KEY;
 
@@ -239,7 +240,6 @@ function OrderDetailsTab() {
 						Payment
 					</Typography>
 				</div>
-
 				<div className="table-responsive">
 					<table className="simple">
 						<thead>
@@ -264,10 +264,26 @@ function OrderDetailsTab() {
 									<span className="truncate">{order.payment.transactionId}</span>
 								</td>
 								<td>
-									<span className="truncate">{order.payment.method}</span>
+									{order.payment?.creditCard ? (
+										<span className="flex flex-warp grid-cols-2 items-center content-center justify-around">
+											<img
+												className="img-fluid w-32"
+												alt="Flag Card"
+												src={FuseUtils.cardFlag(order?.payment?.creditCard?.creditCardBrand)}
+											/>
+											<span className="col-auto text-center">
+												<h5 className="mb-0">
+													{order?.payment?.creditCard?.creditCardNumber}
+												</h5>
+											</span>
+										</span>
+
+									) :
+										<span className="truncate">{order.payment.method}</span>
+									}
 								</td>
 								<td>
-									<span className="truncate">{order.payment.amount}</span>
+									<span className="truncate">{FuseUtils.formatCurrency(order.payment.amount)}</span>
 								</td>
 								<td>
 									<span className="truncate">{order.payment.date}</span>

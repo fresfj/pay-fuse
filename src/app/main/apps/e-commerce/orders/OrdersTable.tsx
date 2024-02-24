@@ -16,8 +16,10 @@ import { Many } from 'lodash';
 import * as React from 'react';
 import { useSelector } from 'react-redux';
 import OrdersStatus from '../order/OrdersStatus';
+import Payment from '../order/Payment';
 import OrdersTableHead from './OrdersTableHead';
 import { EcommerceOrder, selectFilteredOrders, useGetECommerceOrdersQuery } from '../ECommerceApi';
+import FuseUtils from '@fuse/utils';
 
 type OrdersTableProps = WithRouterProps & {
 	navigate: (path: string) => void;
@@ -36,7 +38,7 @@ function OrdersTable(props: OrdersTableProps) {
 	const [selected, setSelected] = useState<string[]>([]);
 
 	const [page, setPage] = useState(0);
-	const [rowsPerPage, setRowsPerPage] = useState(10);
+	const [rowsPerPage, setRowsPerPage] = useState(25);
 	const [tableOrder, setTableOrder] = useState<{
 		direction: 'asc' | 'desc';
 		id: string;
@@ -210,7 +212,7 @@ function OrdersTable(props: OrdersTableProps) {
 											component="th"
 											scope="row"
 										>
-											{`${n.customer.firstName} ${n.customer.lastName}`}
+											{`${n.customer.firstName}`}
 										</TableCell>
 
 										<TableCell
@@ -219,8 +221,7 @@ function OrdersTable(props: OrdersTableProps) {
 											scope="row"
 											align="right"
 										>
-											<span>$</span>
-											{n.total}
+											{FuseUtils.formatCurrency(n.total)}
 										</TableCell>
 
 										<TableCell
@@ -228,7 +229,8 @@ function OrdersTable(props: OrdersTableProps) {
 											component="th"
 											scope="row"
 										>
-											{n.payment.method}
+											<Payment name={n.payment.method} />
+
 										</TableCell>
 
 										<TableCell

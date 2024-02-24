@@ -75,6 +75,21 @@ export const orderStatuses: EcommerceOrder['status'] = [
 		id: '14',
 		name: 'Awaiting Cash-on-delivery payment',
 		color: 'bg-blue-800 text-white'
+	},
+	{
+		id: '15',
+		name: 'PENDING',
+		color: 'bg-orange text-black'
+	},
+	{
+		id: '16',
+		name: 'RECEIVED',
+		color: 'bg-green-800 text-white'
+	},
+	{
+		id: '17',
+		name: 'CONFIRMED',
+		color: 'bg-green-800 text-white'
 	}
 ];
 

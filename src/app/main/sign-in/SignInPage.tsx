@@ -63,87 +63,8 @@ function SignInPage() {
 						</Link>
 					</div>
 
-					<Alert
-						icon={false}
-						severity="info"
-						className="mt-24 px-16 text-13 leading-relaxed"
-					>
-						You are browsing <b>Fuse React Demo</b>. Click on the "Sign in" button to access the Demo and
-						Documentation.
-					</Alert>
+					<FirebaseSignInTab />
 
-					<Tabs
-						value={_.findIndex(tabs, { id: selectedTabId })}
-						variant="fullWidth"
-						className="w-full mt-24 mb-32"
-						indicatorColor="secondary"
-					>
-						{tabs.map((item) => (
-							<Tab
-								onClick={() => handleSelectTab(item.id)}
-								key={item.id}
-								icon={
-									<img
-										className={item.logoClass}
-										src={item.logo}
-										alt={item.title}
-									/>
-								}
-								className="min-w-0"
-								label={item.title}
-							/>
-						))}
-					</Tabs>
-
-					{selectedTabId === 'jwt' && <JwtLoginTab />}
-					{selectedTabId === 'firebase' && <FirebaseSignInTab />}
-
-					<div className="mt-32 flex items-center">
-						<div className="mt-px flex-auto border-t" />
-						<Typography
-							className="mx-8"
-							color="text.secondary"
-						>
-							Or continue with
-						</Typography>
-						<div className="mt-px flex-auto border-t" />
-					</div>
-
-					<div className="mt-32 flex items-center space-x-16">
-						<Button
-							variant="outlined"
-							className="flex-auto"
-						>
-							<FuseSvgIcon
-								size={20}
-								color="action"
-							>
-								feather:facebook
-							</FuseSvgIcon>
-						</Button>
-						<Button
-							variant="outlined"
-							className="flex-auto"
-						>
-							<FuseSvgIcon
-								size={20}
-								color="action"
-							>
-								feather:twitter
-							</FuseSvgIcon>
-						</Button>
-						<Button
-							variant="outlined"
-							className="flex-auto"
-						>
-							<FuseSvgIcon
-								size={20}
-								color="action"
-							>
-								feather:github
-							</FuseSvgIcon>
-						</Button>
-					</div>
 				</CardContent>
 			</Paper>
 

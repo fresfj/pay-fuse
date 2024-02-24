@@ -66,13 +66,21 @@ export const eCommerceApiMocks = (mock: ExtendedMockAdapter) => {
     const { id } = config.params as Params
     const productRef = firebase.firestore().collection('products').doc(id)
     return new Promise(async (resolve, reject) => {
-      const upSel = []
-
       productRef
         .get()
-        .then(doc => {
+        .then(async doc => {
           if (doc.exists) {
-            resolve([200, doc.data()])
+            const upProducts = []
+            await productRef
+              .collection('up')
+              .get()
+              .then(upSnapshot => {
+                upSnapshot.forEach(doc => {
+                  upProducts.push({ id: doc.id, ...doc.data() })
+                })
+              })
+
+            resolve([200, { ...doc.data(), upProducts }])
           } else {
             reject([404, 'Requested product do not exist.'])
           }
@@ -104,11 +112,12 @@ export const eCommerceApiMocks = (mock: ExtendedMockAdapter) => {
       .firestore()
       .collection('orders')
       .orderBy('createdAt', 'desc')
+      .limit(10)
 
     return new Promise(async (resolve, reject) => {
-      ordersRef
+      await ordersRef
         .get()
-        .then(querySnapshot => {
+        .then(async querySnapshot => {
           const newData = querySnapshot.docs.map(doc => {
             const products = []
             doc.data().cart.products.map((itens: any) => {
@@ -138,10 +147,6 @@ export const eCommerceApiMocks = (mock: ExtendedMockAdapter) => {
                 firstName: doc.data().customer?.firstName
                   ? doc.data().customer?.firstName
                   : doc.data().customer?.name,
-                lastName: '',
-                avatar: '',
-                company: '',
-                jobTitle: '',
                 email: doc.data().customer?.email,
                 phone: doc.data().customer?.phone,
                 invoiceAddress: {
@@ -158,14 +163,14 @@ export const eCommerceApiMocks = (mock: ExtendedMockAdapter) => {
               products,
               status: [
                 {
-                  id: 13,
+                  id: 1,
                   name: doc.data().payment.status,
-                  color: 'purple-300',
                   date: doc.data().payment.dueDate
                 }
               ],
               payment: {
                 transactionId: doc.data().payment.id,
+                creditCard: doc.data().payment?.creditCard,
                 amount: doc.data().payment.value,
                 method: doc.data().payment.billingType,
                 date: doc.data().payment.dueDate
@@ -182,13 +187,7 @@ export const eCommerceApiMocks = (mock: ExtendedMockAdapter) => {
             }
             return { ...ordeAdd, id: doc.id }
           })
-          setTimeout(function () {
-            if (Math.random() > 0.1) {
-              resolve([200, newData])
-            } else {
-              resolve([500, { success: false }])
-            }
-          }, 300)
+          resolve([200, newData])
         })
         .catch(error => {
           resolve([404, 'Requested order do not exist.'])
@@ -278,14 +277,14 @@ export const eCommerceApiMocks = (mock: ExtendedMockAdapter) => {
             products,
             status: [
               {
-                id: 13,
+                id: 1,
                 name: doc.data().payment.status,
-                color: 'purple-300',
                 date: doc.data().payment.dueDate
               }
             ],
             payment: {
               transactionId: doc.data().payment.id,
+              creditCard: doc.data().payment?.creditCard,
               amount: doc.data().payment.value,
               method: doc.data().payment.billingType,
               date: doc.data().payment.dueDate

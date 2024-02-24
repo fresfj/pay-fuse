@@ -9,6 +9,7 @@ import { notificationsApiMocks } from './api/notifications-api';
 import { messengerApiMocks } from './api/messenger-api';
 import { financeDashboardApiMocks } from './api/dashboards/finance-api';
 import { contactsApiMocks } from './api/contacts-api';
+import { customersApiMocks } from './api/customers-api';
 import { analyticsDashboardApiMocks } from './api/dashboards/analytics-api';
 import { cryptoDashboardApiMocks } from './api/dashboards/crypto-api';
 import { projectDashboardApiMocks } from './api/dashboards/project-api';
@@ -55,6 +56,7 @@ function MockAdapterProvider(props: MockAdapterProviderProps) {
 				authApiMocks,
 				calendarApiMocks,
 				contactsApiMocks,
+				customersApiMocks,
 				countriesApiMocks,
 				eCommerceApiMocks,
 				fileManagerApiMocks,
