@@ -8,6 +8,7 @@ const ThanksApp = lazy(() => import('./thanks/SuccessPage'))
 /**
  * The checkout app config.
  */
+
 const CheckoutAppConfig = {
 	settings: {
 		layout: {
