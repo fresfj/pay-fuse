@@ -1,10 +1,10 @@
 import { lazy } from 'react';
 import authRoles from '../../../auth/authRoles'
-import CheckoutPage from './cart/CheckoutPage';
+
 
 const CheckoutApp = lazy(() => import('./CheckoutApp'));
 const ThanksApp = lazy(() => import('./thanks/SuccessPage'))
-
+const CheckoutPage = lazy(() => import('./cart/CheckoutAppPage'));
 /**
  * The checkout app config.
  */
