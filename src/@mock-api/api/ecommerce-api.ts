@@ -131,8 +131,6 @@ export const eCommerceApiMocks = (mock: ExtendedMockAdapter) => {
               })
             })
 
-            console.log(doc.data().createdAt.toDate().toString())
-            console.log(`new Date`, new Date(doc.data().createdAt.toDate()))
             const ordeAdd = {
               reference: doc.data().uid
                 ? doc.data().uid
