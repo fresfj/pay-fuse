@@ -112,7 +112,7 @@ export const eCommerceApiMocks = (mock: ExtendedMockAdapter) => {
       .firestore()
       .collection('orders')
       .orderBy('createdAt', 'desc')
-      .limit(10)
+      .limit(12)
 
     return new Promise(async (resolve, reject) => {
       await ordersRef
@@ -131,6 +131,8 @@ export const eCommerceApiMocks = (mock: ExtendedMockAdapter) => {
               })
             })
 
+            console.log(doc.data().createdAt.toDate().toString())
+            console.log(`new Date`, new Date(doc.data().createdAt.toDate()))
             const ordeAdd = {
               reference: doc.data().uid
                 ? doc.data().uid
@@ -141,7 +143,7 @@ export const eCommerceApiMocks = (mock: ExtendedMockAdapter) => {
               total: doc.data().payment?.value
                 ? doc.data().payment?.value
                 : doc.data().cart?.total,
-              date: doc.data().createdAt.toDate(),
+              date: new Date(doc.data().createdAt.toDate()),
               customer: {
                 id: doc.data().customer?.id,
                 firstName: doc.data().customer?.firstName

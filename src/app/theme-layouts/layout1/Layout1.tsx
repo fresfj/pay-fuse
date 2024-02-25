@@ -63,10 +63,11 @@ function Layout1(props: Layout1Props) {
 					{config.toolbar.display && (
 						<ToolbarLayout1 className={config.toolbar.style === 'fixed' ? 'sticky top-0' : ''} />
 					)}
-
-					<div className="sticky top-0 z-99">
-						<Configurator />
-					</div>
+					{config.toolbar.display && (
+						<div className="sticky top-0 z-99">
+							<Configurator />
+						</div>
+					)}
 
 					<div className="relative z-10 flex min-h-0 flex-auto flex-col">
 						<FuseSuspense>{useRoutes(routes)}</FuseSuspense>

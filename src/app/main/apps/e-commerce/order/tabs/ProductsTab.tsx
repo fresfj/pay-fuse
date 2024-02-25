@@ -42,23 +42,32 @@ function ProductsTab() {
 							<td className="w-64">{product.id}</td>
 							<td className="w-80">
 								<img
-									className="product-image"
-									src={product.image}
+									className="product-image rounded-6"
+									src={product.image ? product.image : 'assets/images/apps/ecommerce/product-image-placeholder.png'}
 									alt="product"
 								/>
 							</td>
 							<td>
-								<Typography
-									component={Link}
-									to={`/apps/e-commerce/products/${product.id}`}
-									className="truncate"
-									style={{
-										color: 'inherit',
-										textDecoration: 'underline'
-									}}
-								>
-									{product.name}
-								</Typography>
+								{product.id.toString() !== '1' ?
+									<Typography
+										component={Link}
+										to={`/apps/e-commerce/products/${product.id}`}
+										className="truncate"
+										style={{
+											color: 'inherit',
+											textDecoration: 'underline'
+										}}
+									>
+										{product.name}
+									</Typography>
+									:
+									<Typography
+										className="truncate"
+										style={{ color: 'inherit' }}
+									>
+										{product.name}
+									</Typography>
+								}
 							</td>
 							<td className="w-64 text-right">
 								<span className="truncate">${product.price}</span>

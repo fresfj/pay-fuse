@@ -20,6 +20,7 @@ import Payment from '../order/Payment';
 import OrdersTableHead from './OrdersTableHead';
 import { EcommerceOrder, selectFilteredOrders, useGetECommerceOrdersQuery } from '../ECommerceApi';
 import FuseUtils from '@fuse/utils';
+import format from 'date-fns/format';
 
 type OrdersTableProps = WithRouterProps & {
 	navigate: (path: string) => void;
@@ -43,7 +44,7 @@ function OrdersTable(props: OrdersTableProps) {
 		direction: 'asc' | 'desc';
 		id: string;
 	}>({
-		direction: 'asc',
+		direction: 'desc',
 		id: ''
 	});
 
@@ -159,7 +160,7 @@ function OrdersTable(props: OrdersTableProps) {
 											return o.status[0].name;
 										}
 										default: {
-											return o.id;
+											return o.date;
 										}
 									}
 								}
@@ -246,7 +247,7 @@ function OrdersTable(props: OrdersTableProps) {
 											component="th"
 											scope="row"
 										>
-											{n.date}
+											{format(new Date(n.date), 'dd/MM/yyyy HH:mm:ss')}
 										</TableCell>
 									</TableRow>
 								);

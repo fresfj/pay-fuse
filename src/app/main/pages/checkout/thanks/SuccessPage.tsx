@@ -54,6 +54,10 @@ function ClassicComingSoonPage(props) {
   }
 
   useDeepCompareEffect(() => {
+    if (order?.payment?.status !== 'PENDING') {
+      document.title = `Pedido Realizado - Seu pedido:${uid}`;
+    }
+
     dispatch(getOrder(uid))
     return () => {
       setNoOrder(false)
@@ -184,8 +188,7 @@ function ClassicComingSoonPage(props) {
                           animate={{ opacity: 1, transition: { delay: 0.25 } }}
                         >
                           <ul
-                            className="my-12 list-disc"
-                            style={{ marginLeft: 12 }}
+                            className="my-12 list-disc list-inside"
                           >
                             <li>
                               Para pagar via Internet Banking, copie a linha

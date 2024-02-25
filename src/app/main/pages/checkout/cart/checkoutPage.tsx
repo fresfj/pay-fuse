@@ -5,10 +5,9 @@ import history from '@history'
 import Box from '@mui/material/Box';
 import { lighten, ThemeProvider } from '@mui/material/styles';
 import { selectMainThemeDark } from '@fuse/core/FuseSettings/store/fuseSettingsSlice';
-import { Button, CardContent, CardHeader, CircularProgress, Dialog, DialogContent, DialogTitle, Divider, Fade, Grid, MobileStepper, OutlinedInput, Skeleton, Stack, Step, Stepper } from '@mui/material';
-import InputAdornment from '@mui/material/InputAdornment';
+import { Button, CardContent, CardHeader, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Divider, Fade, FormControl, Grid, IconButton, InputAdornment, MobileStepper, Skeleton, Stack, Step, Stepper, TextField } from '@mui/material';
 import Card from '@mui/material/Card';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useLocation, useParams } from 'react-router-dom';
 import FuseSvgIcon from '@fuse/core/FuseSvgIcon';
 import { useSelector } from 'react-redux'
 import { useGetCheckoutMostlyFaqsQuery, useGetECommerceProductQuery } from '../CheckoutApi';
@@ -28,18 +27,17 @@ import checkoutFormModel from './formModel/checkoutFormModel'
 import formInitialValues from './formModel/formInitialValues'
 import AddressForm from './forms/AddressForm'
 import PaymentForm from './forms/PaymentForm'
-import { addToCart, calculateTotalSelector } from '../store/cartSlice';
+import { addToCart, calculateTotalSelector, updateProduct } from '../store/cartSlice';
 import LoadingButton from '@mui/lab/LoadingButton';
 import clsx from 'clsx';
 import { OrderDataProps, createOrder } from '../store/orderSlice';
-
 import { useAppDispatch } from 'app/store/store';
 import {
 	Customer,
 	useCreateCustomersItemMutation,
 	useGetCustomersParamsQuery
 } from 'src/app/main/apps/customers/CustomersApi'
-import { any } from 'promise';
+
 
 const steps = ['Informações', 'Pagamento']
 const { formId, formField } = checkoutFormModel
@@ -191,10 +189,10 @@ const QontoStepIconRoot = styled('div')<QontoStepIconRootProps>(({ theme, ownerS
 	height: 42,
 	alignItems: 'center',
 	...(ownerState.active && {
-		color: '#444394'
+		color: theme.palette.primary.dark
 	}),
 	'& .QontoStepIcon-completedIcon': {
-		color: '#444394',
+		color: theme.palette.primary.dark,
 		zIndex: 1,
 		fontSize: 18
 	},
@@ -230,7 +228,7 @@ const QontoConnector = styled(StepConnector)(({ theme }) => ({
 	},
 	[`&.${stepConnectorClasses.active}`]: {
 		[`& .${stepConnectorClasses.line}`]: {
-			borderColor: '#444394',
+			borderColor: theme.palette.primary.dark,
 			boxShadow: '0 0 1px 1px rgba(0,0,0,.25), inset 0 1px hsla(0,0%,100%,.07)',
 			transition: 'width 1s ease-in-out',
 			position: 'relative'
@@ -238,7 +236,7 @@ const QontoConnector = styled(StepConnector)(({ theme }) => ({
 	},
 	[`&.${stepConnectorClasses.completed}`]: {
 		[`& .${stepConnectorClasses.line}`]: {
-			borderColor: '#444394',
+			borderColor: theme.palette.primary.dark,
 			boxShadow: '0 0 1px 1px rgba(0,0,0,.25), inset 0 1px hsla(0,0%,100%,.07)',
 			transition: 'width 1s ease-in-out',
 			position: 'relative'
@@ -259,10 +257,10 @@ const QontoConnector = styled(StepConnector)(({ theme }) => ({
 const ColorStepLabel = styled(StepLabel)(({ theme }) => ({
 	[`& .${stepLabelClasses.label}`]: {
 		[`&.${stepLabelClasses.active}`]: {
-			color: '#444394'
+			color: theme.palette.primary.dark
 		},
 		[`&.${stepLabelClasses.completed}`]: {
-			color: '#444394'
+			color: theme.palette.primary.dark
 		}
 	}
 }))
@@ -307,7 +305,7 @@ const _renderTextoProcess = (params, process) => {
 /**
  * The checkout.
  */
-function Checkout() {
+function CheckoutPage() {
 	const mainThemeDark = useSelector(selectMainThemeDark)
 	const dispatch = useAppDispatch();
 	const routeParams = useParams()
@@ -323,6 +321,11 @@ function Checkout() {
 	const { data: customer } = useGetCustomersParamsQuery(customerData, {
 		skip: !customerData
 	});
+
+	const location = useLocation()
+	const searchParams = new URLSearchParams(location.search)
+	const currentAmount = searchParams.get('amount') || '';
+	const [amount, setAmount] = useState(currentAmount)
 
 	const cookiesLabel = [
 		'fullName',
@@ -345,11 +348,20 @@ function Checkout() {
 		data: product,
 		isLoading,
 		isError
-	} = useGetECommerceProductQuery(routeParams.id)
+	} = useGetECommerceProductQuery(routeParams.id, {
+		skip: routeParams.id === 'billing'
+	})
 
 	const handleLoadReCaptcha = () => {
 		setReCaptchaReady(true)
 	}
+
+	const updateAmount = () => {
+		const newSearchParams = new URLSearchParams(location.search);
+		newSearchParams.set('amount', amount);
+		const newUrl = `${location.pathname}?${newSearchParams.toString()}`;
+		history.push(newUrl);
+	};
 
 	async function handleLocation(values, actions) {
 		try {
@@ -511,7 +523,17 @@ function Checkout() {
 			}))
 		}
 
-
+		if (amount && routeParams.id === 'billing') {
+			dispatch(addToCart({
+				id: 1,
+				name: 'Pagamento',
+				image: '',
+				upProducts: [],
+				quantity: 1,
+				installments: 0,
+				value: Number(amount)
+			}))
+		}
 
 		setTimeout(() => {
 			setLoading(false)
@@ -519,7 +541,24 @@ function Checkout() {
 
 	}, [routeParams, product])
 
-	const { data: faqsMost } = useGetCheckoutMostlyFaqsQuery();
+	const [open, setOpen] = React.useState(false);
+
+	const handleClickListItem = () => {
+		setOpen(true);
+	};
+
+	const handleClose = (newValue?: string) => {
+		setOpen(false);
+
+		if (newValue !== amount && !isNaN(Number(newValue))) {
+			const newSearchParams = new URLSearchParams(location.search);
+			newSearchParams.set('amount', newValue);
+			const newUrl = `${location.pathname}?${newSearchParams.toString()}`;
+			dispatch(updateProduct({ id: 1, newValue }));
+			setAmount(newValue)
+			history.push(newUrl);
+		}
+	}
 
 	return (
 		<Root className="flex flex-col flex-auto min-w-0">
@@ -618,7 +657,13 @@ function Checkout() {
 												{steps.map(label => (
 													<Step key={label}>
 														<ColorStepLabel StepIconComponent={QontoStepIcon}>
-															{label}
+															<Typography
+																variant="h4"
+																component="h2"
+																className="m-8 text-2xl antialiased font-semibold text-sky-400/75"
+															>
+																{label}
+															</Typography>
 														</ColorStepLabel>
 													</Step>
 												))}
@@ -680,10 +725,48 @@ function Checkout() {
 											)}
 										</Formik>
 									</CardContent>
+									<div className="my-24 align-items-center text-left">
+										<p className="small mb-0">
+											<small>
+												Este site é criptografadas e protegido por reCAPTCHA e
+												Google.{' '}
+												<a
+													href="https://policies.google.com/privacy"
+													target="_blank"
+													title="Política de privacidade"
+												>
+													Política de privacidade
+												</a>{' '}
+												e{' '}
+												<a
+													href="https://policies.google.com/terms"
+													target="_blank"
+													title="Termos de serviço"
+												>
+													Termos de serviço
+												</a>{' '}
+												se aplicam.
+											</small>
+										</p>
+										<p className="small mb-0">
+											<small>
+												DPay está processando este pedido à serviço de{' '}
+												<b>DIGITAL STAGE</b>. Ao prosseguir você está
+												concordando com os{' '}
+												<a
+													href="https://ds3i.com.br/terms-use/"
+													target="_blank"
+													title="Termos de compra"
+												>
+													Termos de compra
+												</a>
+											</small>
+										</p>
+									</div>
 								</Card>
 							</motion.div>
 						</Grid>
-						<Grid item xs={12} md={4}>
+						<Grid item xs={12} md={4} className='relative md:sticky top-10 h-fit'>
 							<motion.div
 								initial={{ opacity: 0 }}
 								animate={{ opacity: 1, transition: { delay: 0.3 } }}
@@ -783,10 +866,19 @@ function Checkout() {
 													width="60%"
 												/>
 											) : (
-												<span className="total">
+												<span className="total proportional-nums">
 													{formatCurrencyMap(total)}
 												</span>
 											)}
+
+											{amount && (
+												<div className="flex flex-col justify-center w-full mt-12">
+													<div className="p-8 grid justify-items-center">
+														<Button className='w-[90%] rounded-8' variant="outlined" onClick={handleClickListItem}>Alterar valor</Button>
+													</div>
+												</div>
+											)}
+
 										</div>
 									</CardContent>
 								</Card>
@@ -815,9 +907,106 @@ function Checkout() {
 						</Grid>
 					</DialogContent>
 				</Dialog>
+				<ConfirmationDialogRaw
+					id="ringtone-menu"
+					keepMounted
+					open={open}
+					onClose={handleClose}
+					value={amount}
+				/>
 			</div>
 		</Root>
 	);
 }
 
-export default Checkout;
+export default CheckoutPage;
+
+export interface ConfirmationDialogRawProps {
+	id: string;
+	keepMounted: boolean;
+	value: string;
+	open: boolean;
+	onClose: (value?: string) => void;
+}
+
+function ConfirmationDialogRaw(props: ConfirmationDialogRawProps) {
+	const { onClose, value: valueProp, open, ...other } = props;
+	const [value, setValue] = useState(valueProp);
+	const [error, setError] = useState(false);
+
+	useEffect(() => {
+		if (!open) {
+			setValue(valueProp);
+		}
+	}, [valueProp, open]);
+
+	const handleCancel = () => {
+		onClose();
+	};
+
+	const handleOk = () => {
+		onClose(value);
+	}
+
+	const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+		const inputValue = (event.target as HTMLInputElement).value
+		const regex = /^\d*\.?\d{0,2}$/
+
+		const floatValue = parseFloat(inputValue)
+		const isInRange = floatValue >= 25 && floatValue <= 5000
+		setValue(inputValue)
+
+		if (regex.test(inputValue) && isInRange) {
+			setError(false)
+		} else {
+			setError(true)
+		}
+	}
+
+	return (
+		<Dialog
+			sx={{ '& .MuiDialog-paper': { width: '80%', maxHeight: 435 }, color: '#fff', zIndex: theme => theme.zIndex.drawer + 1 }}
+			fullWidth
+			aria-labelledby="alert-dialog-title"
+			aria-describedby="alert-dialog-description"
+			style={{ backdropFilter: 'blur(5px)' }}
+			maxWidth="xs"
+			onClose={handleCancel}
+			open={open}
+			{...other}
+		>
+			<DialogTitle>Alterar valor</DialogTitle>
+			<IconButton
+				aria-label="close"
+				onClick={handleCancel}
+				sx={{
+					position: 'absolute',
+					right: 8,
+					top: 8,
+					color: (theme) => theme.palette.grey[500],
+				}}
+			>
+				<FuseSvgIcon>heroicons-outline:x</FuseSvgIcon>
+			</IconButton>
+			<DialogContent dividers>
+				<FormControl fullWidth>
+					<TextField id="filled-basic" type='tel' value={value} onChange={handleInputChange} label="Novo valor"
+						variant="filled"
+						error={error}
+						helperText={error ? 'O valor deve estar entre R$ 25 e R$ 5.000' : ''}
+						InputProps={{
+							startAdornment: (
+								<InputAdornment position="start">R$</InputAdornment>
+							)
+						}} />
+				</FormControl>
+			</DialogContent>
+			<DialogActions className='grid gap-4 grid-cols-2'>
+				<Button className='rounded-8' autoFocus onClick={handleCancel}>
+					Cancelar
+				</Button>
+				<Button className='rounded-8' variant='contained' color="secondary" onClick={handleOk}>Salvar</Button>
+			</DialogActions>
+		</Dialog>
+	);
+}
