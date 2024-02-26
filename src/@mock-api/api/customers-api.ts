@@ -20,8 +20,19 @@ export const customersApiMocks = (mock: ExtendedMockAdapter) => {
       id: FuseUtils.generateGUID(),
       ...JSON.parse(data as string)
     } as PartialDeep<Customer>)
-    customersDB.push(newCustomer)
 
+    return new Promise(async (resolve, reject) => {
+      firebase
+        .firestore()
+        .collection(`customers`)
+        .doc(newCustomer.id)
+        .set(newCustomer)
+        .then(() => {
+          resolve([200, newCustomer])
+        })
+    })
+
+    customersDB.push(newCustomer)
     return [200, newCustomer]
   })
 
@@ -31,6 +42,7 @@ export const customersApiMocks = (mock: ExtendedMockAdapter) => {
 
   mock.onGet('/customer').reply(({ params }) => {
     const { email, cpfCnpj } = params as Params
+
     return new Promise(async (resolve, reject) => {
       if (email && cpfCnpj) {
         firebase

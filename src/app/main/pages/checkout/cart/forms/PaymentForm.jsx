@@ -146,7 +146,7 @@ const Root = styled('div')(({ theme }) => ({
 }))
 const StyledToggleButtonGroup = styled(ToggleButtonGroup)(({ theme }) => ({
   marginTop: 20,
-  maxWidth: '100%',
+  maxWidth: '112%',
   overflow: 'auto',
   gap: '1vw',
   WebkitBoxOrient: 'horizontal',
@@ -171,6 +171,7 @@ const StyledToggleButtonGroup = styled(ToggleButtonGroup)(({ theme }) => ({
     alignItems: 'center',
     justifyContent: 'center',
     padding: '15px 25px!important',
+    minWidth: '160px',
     border: '1px solid rgba(0,0,0,.12) !important',
     borderRadius: `6px !important`,
     '& p': {
@@ -194,7 +195,7 @@ export default function PaymentForm(props) {
   } = props
 
   const dispatch = useDispatch()
-  const { values: formValues, setValues } = useFormikContext()
+  const { values: formValues, setValues, setFieldValue } = useFormikContext()
   const [alignment, setAlignment] = useState('card')
   const [data, setData] = useState([])
   const [toggle, setToggle] = useState({})
@@ -257,6 +258,7 @@ export default function PaymentForm(props) {
       price: total,
       installmentsOptions: installmentValue
     })
+    setFieldValue('installments', 1)
   }
 
   const handleUp = key => {
@@ -334,13 +336,13 @@ export default function PaymentForm(props) {
         onChange={handleChange}
         aria-label="Platform"
         mt={4}
-        className="flex flex-nowrap gap-12"
+        className="flex flex-nowrap gap-12 -mx-20 px-20"
       >
         {toggleButtons.map((button, index) => (
           <ToggleButton
             key={index}
             value={button.value}
-            className={`tab-nav gap-12 ${
+            className={`tab-nav gap-12 text-xs sm:text-sm ${
               alignment === button.value ? 'tab-active' : ''
             }`}
           >
@@ -550,11 +552,32 @@ export default function PaymentForm(props) {
                   </motion.div>
                 </Grid>
               )}
+              {alignment === 'boleto' && (
+                <Grid item xs={12}>
+                  <motion.div
+                    variants={container}
+                    initial="hidden"
+                    animate="show"
+                    className="grid grid-cols-1"
+                  >
+                    <motion.div variants={item}>
+                      <Typography
+                        variant="subtitle1"
+                        component="p"
+                        gutterBottom
+                      >
+                        Pagamentos com Boleto Bancário levam até 3 dias úteis
+                        para serem compensados e então terem os produtos
+                        liberados.
+                      </Typography>
+                    </motion.div>
+                  </motion.div>
+                </Grid>
+              )}
             </Grid>
           )
         )
       })}
-
       {data.length > 0 && (
         <>
           <Divider sx={{ mb: 4, mt: 4 }} />

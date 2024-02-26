@@ -248,6 +248,9 @@ export const selectCustomerList = (state: AppRootStateType) =>
 /**
  * Select filtered customers
  */
+export const selectCustomerById = async (customer: Customer) =>
+  CustomersApi.endpoints.getCustomersParams.select(customer as any)
+
 export const selectFilteredCustomerList = (customers: Customer[]) =>
   createSelector([selectSearchText], searchText => {
     if (!customers) {

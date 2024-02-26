@@ -167,72 +167,61 @@ export const sendOrderToAsaas = createAsyncThunk(
 
 export const removeCart = createAsyncThunk(
   'checkoutApp/order/removeCart',
-  async (cartId, { dispatch, getState }) => {
-    // const data = await FirebaseService.removeCartById(cartId)
-    // return data
+  async (cartId: string, { dispatch, getState }) => {
+    if (!firebase.apps.length) {
+      return false
+    }
+
+    const firestore = firebase.firestore()
+    const cartRef = firestore.collection('carts').doc(cartId)
+
+    return new Promise((resolve, reject) => {
+      cartRef
+        .delete()
+        .then(() => {
+          resolve('delete com sucesso' as any)
+        })
+        .catch(error => {
+          reject('Erro ao delete os dados')
+        })
+    })
   }
 )
 
 export const createOrderCartToCustomer = createAsyncThunk(
   'checkoutApp/order/createOrderCartToCustomer',
-  async (data, { dispatch, getState }) => {
-    // const { cart } = getState().checkoutApp
-    // let customerToCart = null
-    // const customer = {
-    //   avatar: null,
-    //   background: null,
-    //   name: data.fullName,
-    //   cpfCnpj: data.cpfCnpj,
-    //   email: data.email,
-    //   emails: [{ email: data.email, label: 'default' }],
-    //   phoneNumbers: [
-    //     { country: 'br', phoneNumber: data.phone, label: 'default' }
-    //   ],
-    //   title: '',
-    //   company: '',
-    //   birthday: null,
-    //   address: data.address1,
-    //   addressNumber: data.addressNumber,
-    //   complement: data.complement,
-    //   neighborhood: data.neighborhood,
-    //   city: data.city,
-    //   state: data.state,
-    //   postalCode: data.zipcode,
-    //   invoiceAddress: data.invoiceAddress,
-    //   shippingAddress: data.shippingAddress,
-    //   notes: '',
-    //   tags: [],
-    //   createdAt: serverTimestamp()
-    // }
-    // const params = {
-    //   email: data.email,
-    //   cpfCnpj: data.cpfCnpj
-    // }
-    // try {
-    //   await dispatch(getCustomerByEmailDoc(params)).then(
-    //     async ({ payload }) => {
-    //       if (payload.length === 0) {
-    //         await dispatch(addCustomer(customer)).then(async ({ payload }) => {
-    //           customerToCart = {
-    //             customer: payload,
-    //             cart,
-    //             createdAt: serverTimestamp()
-    //           }
-    //         })
-    //       } else {
-    //         customerToCart = {
-    //           customer: payload[0],
-    //           cart,
-    //           createdAt: serverTimestamp()
-    //         }
-    //       }
-    //     }
-    //   )
-    //   const cartRef = await FirebaseService.createCart(customerToCart)
-    //   return cartRef
-    // } catch (error) {
-    //   return error
-    // }
+  async (orderData: PartialDeep<OrderDataProps>, { dispatch, getState }) => {
+    const AppState = getState() as AppCheckoutStateType
+    const { cart } = AppState.checkoutApp
+
+    if (!firebase.apps.length) {
+      return false
+    }
+
+    const firestore = firebase.firestore()
+    const cartRef = firestore.collection('carts')
+    const timestamp = firebase.firestore.Timestamp.now()
+    const id: string = FuseUtils.generateGUID()
+
+    const { customer, ...cartAlt } = cart
+
+    const data: any = {
+      id,
+      customer: cart.customer,
+      cart: cartAlt
+    }
+
+    return new Promise((resolve, reject) => {
+      cartRef
+        .doc(id)
+        .set({ ...data, createdAt: timestamp })
+        .then(() => {
+          resolve(data)
+        })
+        .catch(error => {
+          resolve(error)
+        })
+    })
   }
 )
 

@@ -12,6 +12,7 @@ import FuseSvgIcon from '@fuse/core/FuseSvgIcon';
 import { useSelector } from 'react-redux'
 import { useGetCheckoutMostlyFaqsQuery, useGetECommerceProductQuery } from '../CheckoutApi';
 import FuseUtils from '@fuse/utils'
+import _ from '@lodash';
 
 import { Formik, Form } from 'formik'
 import Reaptcha from 'reaptcha'
@@ -27,10 +28,10 @@ import checkoutFormModel from './formModel/checkoutFormModel'
 import formInitialValues from './formModel/formInitialValues'
 import AddressForm from './forms/AddressForm'
 import PaymentForm from './forms/PaymentForm'
-import { addToCart, calculateTotalSelector, updateProduct } from '../store/cartSlice';
+import { addCustomer, addToCart, calculateTotalSelector, updateProduct } from '../store/cartSlice';
 import LoadingButton from '@mui/lab/LoadingButton';
 import clsx from 'clsx';
-import { OrderDataProps, createOrder } from '../store/orderSlice';
+import { OrderDataProps, createOrder, createOrderCartToCustomer, removeCart } from '../store/orderSlice';
 import { useAppDispatch } from 'app/store/store';
 import {
 	Customer,
@@ -316,18 +317,15 @@ function CheckoutPage() {
 	const [active, setActive] = useState(true)
 	const total = useSelector(calculateTotalSelector)
 	const { cart } = useSelector((state: any) => state.checkoutApp)
-	const [createCustomer] = useCreateCustomersItemMutation();
-	const [customerData, setCustomerData] = useState({} as any)
-	const { data: customer } = useGetCustomersParamsQuery(customerData, {
-		skip: !customerData
-	});
-
+	const [createCustomer] = useCreateCustomersItemMutation()
+	const [customerData, setCustomerData] = useState()
+	const { data: customer } = useGetCustomersParamsQuery(customerData, { skip: !customerData })
 	const location = useLocation()
 	const searchParams = new URLSearchParams(location.search)
 	const currentAmount = searchParams.get('amount') || '';
 	const [amount, setAmount] = useState(currentAmount)
-
 	const cookiesLabel = [
+		'cartId',
 		'fullName',
 		'email',
 		'phone',
@@ -338,11 +336,12 @@ function CheckoutPage() {
 		'complement'
 	]
 	const [cookies, setCookie, removeCookie] = useCookies(cookiesLabel)
-	const captchaRef = useRef()
+	const captchaRef = useRef<Reaptcha>(null)
 	const formikRef = useRef()
 	const [reCaptchaReady, setReCaptchaReady] = useState(false)
 	const currentValidationSchema = validationSchema[activeStep]
 	const isLastStep = activeStep === steps.length - 1
+	const [cartId, setCartId] = useState(cookies?.cartId || '')
 
 	const {
 		data: product,
@@ -355,13 +354,6 @@ function CheckoutPage() {
 	const handleLoadReCaptcha = () => {
 		setReCaptchaReady(true)
 	}
-
-	const updateAmount = () => {
-		const newSearchParams = new URLSearchParams(location.search);
-		newSearchParams.set('amount', amount);
-		const newUrl = `${location.pathname}?${newSearchParams.toString()}`;
-		history.push(newUrl);
-	};
 
 	async function handleLocation(values, actions) {
 		try {
@@ -377,6 +369,7 @@ function CheckoutPage() {
 
 			actions.setFieldValue('invoiceAddress', address)
 			actions.setFieldValue('shippingAddress', address)
+			return address
 		} catch (error) {
 			console.error(error)
 		}
@@ -389,6 +382,13 @@ function CheckoutPage() {
 	const _submitForm = async (values: OrderDataProps, actions: any) => {
 
 		setProcess(true)
+		const options: OptionsProps = {
+			path: '/',
+			expires: new Date(0),
+			secure: true,
+			partitioned: true,
+			sameSite: 'none'
+		}
 
 		if (customer && customer.length > 0) {
 			await dispatch(createOrder({ ...values, customerId: customer[0].id } as any)).then(async ({ payload }) => {
@@ -411,25 +411,12 @@ function CheckoutPage() {
 					})
 				});
 		}
+
+		cookiesLabel.forEach(cookie => { removeCookie(cookie, options) })
+		dispatch(removeCart(cartId))
 	}
-	const _handleSubmit = (values: OrderDataProps, actions: any) => {
-		if (isLastStep) {
-			if (reCaptchaReady) {
-				//captchaRef.current.execute()
-			}
-			_submitForm(values, actions)
-		} else {
-			setActiveStep(activeStep + 1)
-			actions.setTouched({})
-			actions.setSubmitting(false)
 
-			if (activeStep + 1 === 1 && active) {
-				handleLocation(values, actions)
-				//handleCartToCustomer(values)
-			}
-
-			setCustomerData({ email: values.email, cpfCnpj: values.cpfCnpj })
-		}
+	const _handleSubmit = async (values: OrderDataProps, actions: any) => {
 		const expires = new Date(Date.now() + 45 * 24 * 60 * 60 * 1000)
 		const options: OptionsProps = {
 			path: '/',
@@ -438,8 +425,34 @@ function CheckoutPage() {
 			partitioned: true,
 			sameSite: 'none'
 		}
+
+		if (isLastStep) {
+			if (reCaptchaReady) {
+				captchaRef.current.execute()
+			}
+			_submitForm(values, actions)
+		} else {
+			setActiveStep(activeStep + 1)
+			actions.setTouched({})
+			actions.setSubmitting(false)
+			setCustomerData({ email: values.email, cpfCnpj: values.cpfCnpj } as any)
+			if (activeStep + 1 === 1 && active) {
+				handleLocation(values, actions).then(async (local) => {
+					const data = { ...values, invoiceAddress: local, shippingAddress: local }
+					if (!cartId) {
+						await dispatch(createOrderCartToCustomer(data)).then(({ payload }) => {
+							setCartId(payload.id)
+							setCookie('cartId', payload.id, options)
+						})
+					}
+				})
+			}
+		}
+
 		cookiesLabel.forEach(campo => {
-			setCookie(campo, values[campo], options)
+			if (campo !== 'cartId') {
+				setCookie(campo, values[campo], options)
+			}
 		})
 	}
 
@@ -512,6 +525,18 @@ function CheckoutPage() {
 		)
 	}
 
+	useEffect(() => {
+		if (customer && customer.length > 0) {
+			dispatch(addCustomer(customer[0]))
+		} else if (customerData && active) {
+			createCustomer({ customer: cart.customer } as any)
+				.unwrap()
+				.then(async (action) => {
+					dispatch(addCustomer(action))
+				})
+		}
+	}, [setCustomerData, customer])
+
 	useDeepCompareEffect(() => {
 
 		if (product) {
@@ -528,6 +553,7 @@ function CheckoutPage() {
 				id: 1,
 				name: 'Pagamento',
 				image: '',
+				images: [{ id: 1, name: 'Pagamento' }],
 				upProducts: [],
 				quantity: 1,
 				installments: 0,
@@ -725,8 +751,8 @@ function CheckoutPage() {
 											)}
 										</Formik>
 									</CardContent>
-									<div className="my-24 align-items-center text-left">
-										<p className="small mb-0">
+									<div className="flex flex-col items-center my-24 px-12 text-justify">
+										<p className="small text-wrap mb-0">
 											<small>
 												Este site é criptografadas e protegido por reCAPTCHA e
 												Google.{' '}
@@ -748,7 +774,7 @@ function CheckoutPage() {
 												se aplicam.
 											</small>
 										</p>
-										<p className="small mb-0">
+										<p className="small text-wrap mb-0">
 											<small>
 												DPay está processando este pedido à serviço de{' '}
 												<b>DIGITAL STAGE</b>. Ao prosseguir você está
@@ -793,12 +819,22 @@ function CheckoutPage() {
 													{k > 0 ? <Divider /> : ''}
 													<div className="content-card">
 														<div className="imagem-produto">
-															{item.image && !loading ? (
-																<img
-																	src={item.image}
-																	alt="product-image"
-																	className="product-img"
-																/>
+															{item?.images?.length > 0 && !loading ? (
+
+																item.featuredImageId ? (
+																	<img
+																		className="w-full block rounded product-img"
+																		src={_.find(item.images, { id: item.featuredImageId })?.url}
+																		alt={item.name}
+																	/>
+																) : (
+																	<img
+																		className="w-full block rounded product-img"
+																		src="assets/images/apps/ecommerce/on-payment.png"
+																		alt={item.name}
+																	/>
+																)
+
 															) : (
 																<Skeleton
 																	sx={{ borderRadius: 2 }}

@@ -5,6 +5,7 @@ import { createSelector } from 'reselect'
 const cartSlice = createSlice({
   name: 'checkoutApp/cart',
   initialState: {
+    customer: null,
     products: [],
     quantity: 0,
     discount: { value: 0, code: '', applied: '' },
@@ -12,6 +13,9 @@ const cartSlice = createSlice({
     total: 0
   },
   reducers: {
+    addCustomer: (state, action) => {
+      state.customer = action.payload
+    },
     addToCart: (state, action) => {
       const itemExists = state.products.find(
         item => item.id === action.payload.id
@@ -89,13 +93,13 @@ const updateCartTotals = state => {
   state.total = state.subTotal - state.discount.value
 }
 
-type AppRootStateType = RootStateType<cartSliceType>
 export type cartSliceType = typeof cartSlice
 
 export default cartSlice.reducer
 
 export const {
   addToCart,
+  addCustomer,
   addDiscount,
   updateProduct,
   incrementQuantity,

@@ -4,6 +4,7 @@ import { createSelector } from 'reselect'
 const cartSlice = createSlice({
   name: 'checkoutApp/cart',
   initialState: {
+    customer: null,
     products: [],
     quantity: 0,
     discount: { value: 0, code: '', applied: '' },
