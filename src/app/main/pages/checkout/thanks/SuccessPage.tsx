@@ -24,6 +24,9 @@ import { useDeepCompareEffect } from '@fuse/hooks'
 import { getOrder, selectOrder } from '../store/orderSlice'
 import { Player, Controls } from '@lottiefiles/react-lottie-player'
 import Confetti from 'react-confetti'
+import { saveAs } from 'file-saver'
+import axios from 'axios'
+
 
 function ClassicComingSoonPage(props) {
   const date = format(new Date(), 'MMM dd, h:mm a')
@@ -51,6 +54,24 @@ function ClassicComingSoonPage(props) {
 
   const doSomething = () => {
     //playerRef.current.play()
+  }
+
+  const download = () => {
+    saveAs(order?.payment?.bankSlipUrl, `save-order-${uid}.pdf`)
+
+    axios.get(order?.payment?.bankSlipUrl, {
+      responseType: 'arraybuffer',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/pdf' },
+    })
+      .then(response => {
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `order-${uid}.pdf`);
+        document.body.appendChild(link);
+        link.click();
+      })
+      .catch(error => console.log(error));
   }
 
   useDeepCompareEffect(() => {
@@ -239,7 +260,7 @@ function ClassicComingSoonPage(props) {
                           </Tooltip>
                           <Button
                             component={Link}
-                            href={order?.payment?.bankSlipUrl}
+                            onClick={download}
                             className="w-full rounded-md"
                             variant="outlined"
                           >
