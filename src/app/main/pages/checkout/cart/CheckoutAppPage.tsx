@@ -930,7 +930,7 @@ function CheckoutPage() {
 					sx={{ color: '#fff', zIndex: theme => theme.zIndex.drawer + 1 }}
 					style={{ backdropFilter: 'blur(5px)' }}
 				>
-					<DialogTitle>{'Processo de validação em andamento'}</DialogTitle>
+					<DialogTitle>{'Validação em andamento'}</DialogTitle>
 					<DialogContent sx={{ marginY: 2 }}>
 						<Grid
 							container

@@ -31,6 +31,7 @@
         "autosuggest-highlight": "3.3.4",
         "axios": "1.6.5",
         "axios-mock-adapter": "1.21.5",
+        "boleto.js": "^1.1.4",
         "clipboard": "^2.0.11",
         "clsx": "2.1.0",
         "core-js": "3.35.0",

@@ -24,14 +24,68 @@ import { useDeepCompareEffect } from '@fuse/hooks'
 import { getOrder, selectOrder } from '../store/orderSlice'
 import { Player, Controls } from '@lottiefiles/react-lottie-player'
 import Confetti from 'react-confetti'
-import { saveAs } from 'file-saver'
-import axios from 'axios'
+import history from '@history'
+import Boleto from 'boleto.js'
+import { TextareaAutosize as BaseTextareaAutosize } from '@mui/base/TextareaAutosize';
+import { styled } from '@mui/system';
 
+const blue = {
+  100: '#DAECFF',
+  200: '#b6daff',
+  400: '#3399FF',
+  500: '#007FFF',
+  600: '#0072E5',
+  900: '#003A75',
+};
+
+const grey = {
+  50: '#F3F6F9',
+  100: '#E5EAF2',
+  200: '#DAE2ED',
+  300: '#C7D0DD',
+  400: '#B0B8C4',
+  500: '#9DA8B7',
+  600: '#6B7A90',
+  700: '#434D5B',
+  800: '#303740',
+  900: '#1C2025',
+};
+
+const Textarea = styled(BaseTextareaAutosize)(
+  ({ theme }) => `
+    box-sizing: border-box;
+    font-size: 1.4rem;
+    font-weight: 400;
+    line-height: 1.4;
+    padding: 8px 12px;
+    border-radius: 8px;
+    color: ${theme.palette.mode === 'dark' ? grey[300] : grey[900]};
+    background: ${theme.palette.mode === 'dark' ? grey[900] : '#f0f0f0'};
+    border: 1px solid ${theme.palette.mode === 'dark' ? grey[700] : grey[50]};
+    box-shadow: 0px 2px 2px ${theme.palette.mode === 'dark' ? grey[900] : grey[50]};
+
+    &:hover {
+      border-color: ${blue[400]};
+    }
+
+    &:focus {
+      border-color: ${blue[400]};
+      box-shadow: 0 0 0 3px ${theme.palette.mode === 'dark' ? blue[600] : blue[200]};
+    }
+
+    // firefox
+    &:focus-visible {
+      outline: 0;
+    }
+  `,
+);
 
 function ClassicComingSoonPage(props) {
   const date = format(new Date(), 'MMM dd, h:mm a')
   const [counter, setCounter] = useState(1800)
   const [noOrder, setNoOrder] = useState(false)
+  const [barcode, setBarcode] = useState('')
+
   const playerRef = createRef<Player>()
   const dispatch = useAppDispatch()
 
@@ -43,9 +97,10 @@ function ClassicComingSoonPage(props) {
   const searchParams = new URLSearchParams(location.search)
   const uid = searchParams.get('uid') ? searchParams.get('uid') : routeParams.id
   const [open, setOpen] = useState(false)
+  const [openPix, setOpenPix] = useState(false)
 
   const handleTooltipClose = () => {
-    setOpen(false)
+    setOpen(false); setOpenPix(false)
   }
 
   const handleTooltipOpen = () => {
@@ -57,21 +112,7 @@ function ClassicComingSoonPage(props) {
   }
 
   const download = () => {
-    saveAs(order?.payment?.bankSlipUrl, `save-order-${uid}.pdf`)
-
-    axios.get(order?.payment?.bankSlipUrl, {
-      responseType: 'arraybuffer',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/pdf' },
-    })
-      .then(response => {
-        const url = window.URL.createObjectURL(new Blob([response.data]));
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', `order-${uid}.pdf`);
-        document.body.appendChild(link);
-        link.click();
-      })
-      .catch(error => console.log(error));
+    history.push(`${order?.payment?.bankSlipUrl}?download=true`)
   }
 
   useDeepCompareEffect(() => {
@@ -79,11 +120,17 @@ function ClassicComingSoonPage(props) {
       document.title = `Pedido Realizado - Seu pedido:${uid}`;
     }
 
+    const number = order?.payment.identificationField
+    if (number) {
+      const svg = new Boleto(number).toSVG()
+      setBarcode(`data:image/svg+xml;base64,${window.btoa(svg)}`)
+    }
+
     dispatch(getOrder(uid))
     return () => {
       setNoOrder(false)
     }
-  }, [dispatch])
+  }, [dispatch, order])
 
   const formatTime = timer => {
     const getSeconds = `0${timer % 60}`.slice(-2)
@@ -94,6 +141,7 @@ function ClassicComingSoonPage(props) {
     return `${getMinutes}:${getSeconds}`
   }
 
+
   useEffect(() => {
     const timer =
       counter > 0 && setInterval(() => setCounter(counter - 1), 1000)
@@ -101,11 +149,9 @@ function ClassicComingSoonPage(props) {
     return () => clearInterval(timer)
   }, [counter])
 
-  const handleCopy = () => {
-    const clipboard = new ClipboardJS('.copy-button')
-    setOpen(true)
+  const handleCopy = (buttonClass: string) => {
+    const clipboard = new ClipboardJS('.copy-button' + buttonClass)
     clipboard.on('success', function (e) {
-      console.log('Texto copiado:', e.text)
       clipboard.destroy()
     })
 
@@ -113,7 +159,7 @@ function ClassicComingSoonPage(props) {
       console.error('Erro ao copiar texto:', e.action)
       clipboard.destroy()
     })
-    const copy: any = document.querySelector('.copy-button')
+    const copy: any = document.querySelector('.copy-button' + buttonClass)
 
     copy.click()
     copy.style.backgroundColor = '#22c55e'
@@ -122,7 +168,7 @@ function ClassicComingSoonPage(props) {
     setTimeout(() => {
       copy.style.backgroundColor = ''
       copy.style.color = ''
-      setOpen(false)
+      handleTooltipClose()
     }, 3000)
   }
 
@@ -196,14 +242,89 @@ function ClassicComingSoonPage(props) {
                           animate={{ opacity: 1, transition: { delay: 0.25 } }}
                         >
                           <Typography
-                            component="h6"
-                            variant="h6"
+                            component="h5"
+                            variant="h5"
                             gutterBottom
                             style={{ fontWeight: 700 }}
                           >
-                            Você tem 2 dias úteis para pagar
+                            Você tem 2 dias úteis para pagar seu boleto
                           </Typography>
                         </motion.div>
+                        {order?.payment?.payload &&
+                          <div className='col-12'>
+                            <Typography
+                              component="p"
+                              variant="subtitle1"
+                              gutterBottom
+                              style={{ fontWeight: 700 }}
+                            >
+                              Pagar o seu boleto com PIX
+                            </Typography>
+                            <div className="grid grid-cols-1 md:grid-cols-2 justify-center items-center mt-12 mb-12 gap-12 font-primary barcode">
+                              <div className="grid gap-12">
+                                <ul
+                                  className="my-12 list-disc list-inside"
+                                >
+                                  <li>
+                                    Abra seu aplicativo de pagamento onde você utiliza o Pix e escolha a opção <strong>Ler QR Code</strong>
+                                  </li>
+                                  <li>
+                                    Você também pode pagar escolhendo a opção <strong>Pix Copia e Cola</strong> no seu aplicativo de pagamento ou Internet Banking (banco online).
+                                  </li>
+                                  <li>Neste caso, copie o código clicando no botão abaixo:</li>
+                                </ul>
+                                <Textarea
+                                  minRows={3}
+                                  value={order?.payment?.payload}
+                                  aria-label="Código Pix"
+                                  placeholder="Código Pix"
+                                />
+                                <Tooltip
+                                  onClose={handleTooltipClose}
+                                  open={openPix}
+                                  arrow
+                                  placement="top"
+                                  disableHoverListener
+                                  disableFocusListener
+                                  title="Código copiado!"
+                                >
+                                  <Button
+                                    className="copy-button cpix w-full rounded-md"
+                                    variant="contained"
+                                    data-clipboard-text={order?.payment?.payload}
+                                    onClick={() => { handleCopy('.cpix'); setOpenPix(true); }}
+                                  >
+                                    Copiar o código Pix
+                                  </Button>
+                                </Tooltip>
+                              </div>
+                              <div className="text-center">
+                                <div>
+                                  Pague o boleto com Pix<br /> usando o QRcode abaixo
+                                </div>
+                                <img
+                                  style={{ display: 'inline-block', width: 250 }}
+                                  className="w-100 rounded-8"
+                                  src={`data:image/png;base64,${order?.payment?.encodedImage}`}
+                                  alt="QR Code PIX"
+                                />
+                              </div>
+                            </div>
+                            <div
+                              className="col-span-12 my-32 border-b-1"
+                              style={{ borderStyle: 'dotted' }}
+                            />
+                          </div>
+                        }
+                        <Typography
+                          component="p"
+                          variant="subtitle1"
+                          gutterBottom
+                          style={{ fontWeight: 700 }}
+                        >
+                          Pagar com linha digitável
+                        </Typography>
+
                         <motion.div
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1, transition: { delay: 0.25 } }}
@@ -212,12 +333,10 @@ function ClassicComingSoonPage(props) {
                             className="my-12 list-disc list-inside"
                           >
                             <li>
-                              Para pagar via Internet Banking, copie a linha
-                              digitável.
+                              Para pagar via Internet Banking, copie a linha digitável.
                             </li>
                             <li>
-                              Para pagar em qualquer banco, caixas eletrônicos
-                              ou lotéricas, imprima o boleto.
+                              Para pagar em qualquer banco, caixas eletrônicos ou lotéricas, imprima o boleto.
                             </li>
                           </ul>
                         </motion.div>
@@ -231,8 +350,13 @@ function ClassicComingSoonPage(props) {
                             <strong>3 dias úteis</strong> para serem compensados
                           </p>
                         </motion.div>
+                        <div className='p-12'>
+                          {barcode &&
+                            <img src={barcode} alt="barcode" />
+                          }
+                        </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 justify-center items-center mt-12 gap-12 font-primary barcode">
+                        <div className="grid grid-cols-1 md:grid-cols-3 justify-center items-center mt-12 mb-12 gap-12 font-primary barcode">
                           <TextField
                             label="Código de barras"
                             value={order?.payment?.barCode}
@@ -250,10 +374,10 @@ function ClassicComingSoonPage(props) {
                             title="Código copiado!"
                           >
                             <Button
-                              className="copy-button w-full rounded-md"
+                              className="copy-button cbar w-full rounded-md"
                               variant="contained"
                               data-clipboard-text={order?.payment?.barCode}
-                              onClick={handleCopy}
+                              onClick={() => { handleCopy('.cbar'); setOpen(true) }}
                             >
                               Copiar o código de barras
                             </Button>
@@ -264,7 +388,7 @@ function ClassicComingSoonPage(props) {
                             className="w-full rounded-md"
                             variant="outlined"
                           >
-                            Imprimir boleto
+                            Download boleto
                           </Button>
                         </div>
                       </Grid>
@@ -360,14 +484,24 @@ function ClassicComingSoonPage(props) {
                           </p>
 
                           <div className="flex mt-8 justify-center align-items-center font-primary barcode">
-                            <Button
-                              className="copy-button w-full"
-                              variant="outlined"
-                              data-clipboard-text={order?.payment?.payload}
-                              onClick={handleCopy}
+                            <Tooltip
+                              onClose={handleTooltipClose}
+                              open={open}
+                              arrow
+                              placement="top"
+                              disableHoverListener
+                              disableFocusListener
+                              title="Código copiado!"
                             >
-                              Clique aqui para copiar o código pix
-                            </Button>
+                              <Button
+                                className="copy-button cpix w-full"
+                                variant="outlined"
+                                data-clipboard-text={order?.payment?.payload}
+                                onClick={() => { handleCopy('.cpix'); setOpen(true) }}
+                              >
+                                Clique aqui para copiar o código pix
+                              </Button>
+                            </Tooltip>
                           </div>
                         </Grid>
                       </>
